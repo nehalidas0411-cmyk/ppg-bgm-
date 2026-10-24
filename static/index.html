@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heart Rate Monitor using an ARM Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body>
+<header class="hero"><div class="wrap">
+<p class="course">Microcontrollers &amp; Applications</p>
+<h1>Turn a pulse signal into a readable BPM value.</h1>
+<p class="lead">An optical PPG sensor, an STM32F103C8 (ARM Cortex-M3) and an OLED. Try the beat detector below: it runs the same steps as the firmware.</p>
+<div class="demo">
+<canvas id="trace" width="1000" height="260" role="img" aria-label="Simulated PPG waveform with detected beats"></canvas>
+<div class="readout"><div><span id="bpm">--</span><small>BPM</small></div><p id="status">Searching</p></div>
+<div class="controls">
+<label>Pulse rate <output id="bv">75</output> BPM<input id="b" type="range" min="40" max="180" value="75"></label>
+<label>Noise / motion <output id="nv">0.05</output><input id="n" type="range" min="0" max="0.6" step="0.01" value="0.05"></label>
+</div><p class="note">Simulated signal from the Flask backend. Not a measured result.</p></div>
+</div></header>
+<main class="wrap">
+<section><h2>Photoplethysmography in four steps</h2>
+<ol class="steps"><li><b>LED sends light</b>A light source illuminates the skin.</li><li><b>Pulse changes blood volume</b>Each beat changes the volume in the tissue.</li><li><b>Photodiode senses reflection</b>Reflected light varies with the pulse.</li><li><b>PPG waveform emerges</b>Repeating peaks mark pulse events.</li></ol>
+<p>PPG measures a blood-volume-related optical signal. ECG measures the heart's electrical activity.</p></section>
+
+<section><h2>System architecture</h2>
+<div class="flow"><span>Optical PPG sensor</span><span>ADC1 · PA0</span><span>STM32F103C8<br><small>TIM2 sets sample interval</small></span><span>BPM algorithm<br><small>detect, time, average</small></span><span>SSD1306 OLED<br><small>I²C1 · PB6/PB7</small></span></div>
+<div class="scroll"><table><caption>Example wiring. Check your module and board pinout first; keep all grounds common.</caption>
+<tr><th>Device / signal</th><th>STM32F103C8</th><th>Note</th></tr>
+<tr><td>PPG module VCC</td><td>3.3 V</td><td>Use a module rated for 3.3 V.</td></tr>
+<tr><td>PPG module OUT</td><td>PA0 / ADC1_IN0</td><td>Keep the output within ADC range.</td></tr>
+<tr><td>SSD1306 OLED</td><td>PB6 SCL · PB7 SDA</td><td>I²C1 default mapping.</td></tr>
+<tr><td>Optional buzzer</td><td>PB0 via transistor</td><td>Use a driver stage.</td></tr></table></div>
+<p class="warn">Never feed a 5 V sensor output directly into a 3.3 V MCU ADC.</p></section>
+
+<section><h2>Calculators</h2><div class="calc">
+<form data-k="ibi"><h3>Beat interval to BPM</h3><label>IBI (ms)<input name="ibi_ms" type="number" value="800" min="1"></label><button>Calculate</button><p class="out"></p></form>
+<form data-k="adc"><h3>ADC count to voltage</h3><label>Count (0–4095)<input name="adc_count" type="number" value="2048" min="0" max="4095"></label><button>Calculate</button><p class="out"></p></form>
+<form data-k="err"><h3>Percentage error</h3><label>Device BPM<input name="device_bpm" type="number" value="74"></label><label>Manual count BPM<input name="reference_bpm" type="number" value="76"></label><button>Calculate</button><p class="out"></p></form>
+</div></section>
+
+<section><h2>Firmware logic</h2>
+<pre>every 10 ms (timer tick):
+  raw = ADC_read(PA0)
+  signal = moving_average(raw)
+  threshold = update_threshold(signal)
+  if rising_crossing(signal, threshold):
+    if time_since(lastBeat) >= 300 ms:
+      if lastBeat exists:
+        IBI = now - lastBeat
+        BPM = 60000 / IBI
+        add BPM to recent-value average
+      lastBeat = now
+  display BPM when estimate is valid</pre>
+<p>Sampling at 100 samples/s with a 12-bit ADC (about 0.81 mV per count at 3.3 V). On timeout, the display shows "--" or "Searching".</p></section>
+
+<section><h2>Evaluating and limits</h2>
+<ul class="two"><li><b>Stable contact</b>Does a clean waveform appear when the finger is still?</li><li><b>Repeatability</b>Do resting readings settle near the same value?</li><li><b>Disturbance</b>Does movement or loose contact cause errors?</li><li><b>Reference check</b>Compare with a manual 60-second count.</li></ul>
+<p>Motion, contact pressure, ambient light, low blood flow and a fixed threshold can all degrade the reading.</p></section>
+</main>
+<footer class="wrap"><p>Presented by Tanishka Bajpai (RA2411060010004), Nehali Das (RA2411060010007), Kamya Sharma (RA2411060010009). Educational prototype only; not for diagnosis or treatment decisions.</p></footer>
+<script src="app.js"></script></body></html>
