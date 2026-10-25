@@ -38,7 +38,7 @@ function ui(){$("adc").textContent=S.run?S.adc:"--";$("volt").textContent=S.run?
   $("ibi").textContent=S.ibi&&S.shown?S.ibi+" ms":"--";$("avg").textContent=S.shown??"--";$("nb").textContent=S.nb||0;$("amp").textContent=S.run?S.amp:"--";
   $("l1").classList.toggle("on",S.run);$("l2").classList.toggle("on",S.run);
   const a=S.run&&S.shown&&(S.shown<+$("lo").value||S.shown>+$("hi").value);$("l3").classList.toggle("on",!!a);
-  if(a&&performance.now()-S.beepAt>1500){S.beepAt=performance.now();try{const o=S.ac.createOscillator();o.connect(S.ac.destination);o.frequency.value=880;o.start();o.stop(S.ac.currentTime+.15)}catch(e){}}}
+if(a&&performance.now()-S.beepAt>1500){S.beepAt=performance.now();beep()}}
 let prev=0;
 function frame(now){if(S.run){let k=Math.min((now-prev)/10,10);for(;k>=1;k--)tick(gen())}prev=now;scope();oled();ui();requestAnimationFrame(frame)}
 S.bpm=75;S.finger=true;
