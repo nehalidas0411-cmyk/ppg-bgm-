@@ -81,6 +81,27 @@ def calc():
     return jsonify(out)
 
 
+READINGS = []
+
+
+@app.post("/api/readings")
+def save_reading():
+    d = request.get_json(force=True)
+    bpm = d.get("bpm")
+    if not bpm:
+        return jsonify({"error": "No valid BPM to save"}), 400
+    ref = d.get("reference_bpm")
+    err = round(abs(float(bpm) - float(ref)) / float(ref) * 100, 2) if ref else None
+    READINGS.append({"bpm": float(bpm), "reference_bpm": float(ref) if ref else None, "error_pct": err})
+    del READINGS[:-20]
+    return jsonify(READINGS[-1])
+
+
+@app.get("/api/readings")
+def list_readings():
+    return jsonify(READINGS[::-1])
+
+
 if __name__ == "__main__":
     import os
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=os.environ.get("FLASK_DEBUG") == "1")
