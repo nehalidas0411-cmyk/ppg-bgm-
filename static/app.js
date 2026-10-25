@@ -39,6 +39,9 @@ function ui(){$("adc").textContent=S.run?S.adc:"--";$("volt").textContent=S.run?
   $("l1").classList.toggle("on",S.run);$("l2").classList.toggle("on",S.run);
   const a=S.run&&S.shown&&(S.shown<+$("lo").value||S.shown>+$("hi").value);$("l3").classList.toggle("on",!!a);
 if(a&&performance.now()-S.beepAt>1500){S.beepAt=performance.now();beep()}}
+function beep(){try{S.ac=S.ac||new (window.AudioContext||window.webkitAudioContext)();if(S.ac.state==="suspended")S.ac.resume();
+  const o=S.ac.createOscillator(),g=S.ac.createGain();o.type="square";o.frequency.value=2000;g.gain.value=.15;o.connect(g);g.connect(S.ac.destination);o.start();o.stop(S.ac.currentTime+.25)}catch(e){}}
+$("test").onclick=()=>{beep();$("l3").classList.add("on");setTimeout(()=>$("l3").classList.remove("on"),300);log("buzzer test")};
 let prev=0;
 function frame(now){if(S.run){let k=Math.min((now-prev)/10,10);for(;k>=1;k--)tick(gen())}prev=now;scope();oled();ui();requestAnimationFrame(frame)}
 S.bpm=75;S.finger=true;
